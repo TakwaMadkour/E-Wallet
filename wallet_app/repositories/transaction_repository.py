@@ -1,4 +1,6 @@
 class TransactionRepository:
+    # using ? placeholder to prevent sql injection
+    # conn is supplied for every method as an argument rather than opening new connection each time keeping the transaction as one atomic unit
     def get_by_key(self, conn, key):
         return conn.execute(
             "SELECT * FROM transactions WHERE idempotency_key=?", (key,)
@@ -13,6 +15,7 @@ class TransactionRepository:
                VALUES(?,?,?,?, 'completed',?,?)""",
             (key, request_hash, kind, amount_minor, description, reversal_of)
         )
+        # return the newly generated primary key
         return cur.lastrowid
 
     def get(self, conn, transaction_id):

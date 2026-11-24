@@ -67,13 +67,13 @@ END;
 class Database:
     def __init__(self, path="wallet.db"):
         self.path = str(Path(path))
-        self.initialize()
+        self.initialize() # create db file and run schema
 
     def connect(self):
-        conn = sqlite3.connect(self.path, timeout=15, isolation_level=None)
-        conn.row_factory = sqlite3.Row
+        conn = sqlite3.connect(self.path, timeout=15, isolation_level=None) # enables autocommit made in python
+        conn.row_factory = sqlite3.Row  # rows accessed by column name
         conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA busy_timeout = 15000")
+        conn.execute("PRAGMA busy_timeout = 15000")  # internal busy handler timeout`15 seconds
         return conn
 
     def initialize(self):
@@ -83,5 +83,6 @@ class Database:
     def transaction(self):
         """Return a connection with an immediate write transaction started."""
         conn = self.connect()
-        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("BEGIN IMMEDIATE") # for balance updates,This prevents deadlocks when multiple writers or read-then-write operations contend for the database.
+        #That's how we prevent both requests from spending the same money.
         return conn
