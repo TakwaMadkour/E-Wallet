@@ -15,8 +15,10 @@ class TransactionRepository:
                VALUES(?,?,?,?, 'completed',?,?)""",
             (key, request_hash, kind, amount_minor, description, reversal_of)
         )
-        # return the newly generated primary key
-        return cur.lastrowid
+        transaction_id = cur.lastrowid
+        conn.execute("INSERT INTO transaction_workflows(transaction_id,state) VALUES(?,'completed')", (transaction_id,))
+        conn.execute("INSERT INTO transaction_state_events(transaction_id,old_state,new_state,reason) VALUES(?,NULL,'completed','Financial transaction posted')", (transaction_id,))
+        return transaction_id
 
     def get(self, conn, transaction_id):
         return conn.execute(
@@ -25,6 +27,6 @@ class TransactionRepository:
 
     def list_all(self, conn, limit=200):
         return conn.execute(
-            "SELECT * FROM transactions ORDER BY transaction_id DESC LIMIT ?",
+            "SELECT t.*,w.state AS workflow_state FROM transactions t LEFT JOIN transaction_workflows w ON w.transaction_id=t.transaction_id ORDER BY t.transaction_id DESC LIMIT ?",
             (limit,)
         ).fetchall()

@@ -10,7 +10,10 @@ def to_minor_units(value) -> int:
         raise ValueError("Amount must be greater than zero.")
     if amount.as_tuple().exponent < -2:
         raise ValueError("EGP amounts may have at most two decimal places.")
-    return int(amount * 100)
+    minor = int(amount * 100)
+    if minor > 9_000_000_000_000_000_000:
+        raise ValueError("Amount exceeds the supported monetary limit.")
+    return minor
 
 def format_money(minor_units: int) -> str:
     sign = "-" if minor_units < 0 else ""

@@ -64,9 +64,9 @@ def main():
             show_result(result)
             if result.success:
                 if result.data["role"] == "admin":
-                    admin_menu(result.data, admin)
+                    admin_menu(result.data, admin, db)
                 else:
-                    customer_menu(result.data, auth, wallet, transfers)
+                    customer_menu(result.data, auth, wallet, transfers, db)
         elif choice == "0":
             print("Goodbye!")
             break
