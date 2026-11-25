@@ -6,6 +6,7 @@ from wallet_app.repositories.ledger_repository import LedgerRepository
 from wallet_app.repositories.transaction_repository import TransactionRepository
 from wallet_app.services.common import request_fingerprint, replay_or_conflict, row_dict
 
+
 class WalletService:
     def __init__(self, db):
         self.db = db
@@ -35,13 +36,19 @@ class WalletService:
             conn.close()
 
     def get_wallet(self, wallet_id):
-        with self.db.connect() as conn:
+        conn = self.db.connect()
+        try:
             wallet = self.wallets.get(conn, wallet_id)
+
             if not wallet:
                 return Result.fail("WALLET_NOT_FOUND", "Wallet does not exist.")
+
             data = row_dict(wallet)
             data["balance_minor"] = self.wallets.balance(conn, wallet_id)
+
             return Result.ok("WALLET_FOUND", "Wallet retrieved.", data)
+        finally:
+            conn.close()
 
     def get_balance(self, wallet_id):
         result = self.get_wallet(wallet_id)
@@ -68,7 +75,8 @@ class WalletService:
         fingerprint = request_fingerprint(kind, [wallet_id], minor)
         conn = self.db.transaction()
         try:
-            replay = replay_or_conflict(self.transactions, conn, key, fingerprint)
+            replay = replay_or_conflict(
+                self.transactions, conn, key, fingerprint)
             if replay:
                 conn.commit()
                 if replay["conflict"]:
@@ -114,9 +122,18 @@ class WalletService:
                 "balance_minor": self.wallets.balance(conn, wallet_id)}
 
     def history(self, wallet_id, limit=100):
-        with self.db.connect() as conn:
+        conn = self.db.connect()
+        try:
             if not self.wallets.get(conn, wallet_id):
                 return Result.fail("WALLET_NOT_FOUND", "Wallet does not exist.")
+
             rows = self.ledger.history(conn, wallet_id, limit)
-            return Result.ok("HISTORY_FOUND", "Ledger history retrieved.",
-                             [dict(row) for row in rows])
+
+            return Result.ok(
+                "HISTORY_FOUND",
+                "Ledger history retrieved.",
+                [dict(row) for row in rows]
+            )
+
+        finally:
+            conn.close()

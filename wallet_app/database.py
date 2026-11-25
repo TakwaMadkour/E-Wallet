@@ -64,24 +64,31 @@ BEFORE DELETE ON transactions BEGIN
 END;
 """
 
+
 class Database:
     def __init__(self, path="wallet.db"):
         self.path = str(Path(path))
-        self.initialize() 
+        self.initialize()
 
     def connect(self):
-        conn = sqlite3.connect(self.path, timeout=15, isolation_level=None) # enables autocommit made in python
+        # enables autocommit made in python
+        conn = sqlite3.connect(self.path, timeout=15, isolation_level=None)
         conn.row_factory = sqlite3.Row  # rows accessed by column name
         conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA busy_timeout = 15000")  # internal busy handler timeout`15 seconds
+        # internal busy handler timeout`15 seconds
+        conn.execute("PRAGMA busy_timeout = 15000")
         return conn
 
     def initialize(self):
-        with self.connect() as conn:
+        conn = self.connect()
+        try:
             conn.executescript(SCHEMA)
+        finally:
+            conn.close()
 
     def transaction(self):
         """Return a connection with an immediate write transaction started."""
         conn = self.connect()
-        conn.execute("BEGIN IMMEDIATE") # That's how we prevent both requests from spending the same money,for balance updates.This prevents deadlocks when multiple writers or read-then-write operations contend for the database.
+        # That's how we prevent both requests from spending the same money,for balance updates.This prevents deadlocks when multiple writers or read-then-write operations contend for the database.
+        conn.execute("BEGIN IMMEDIATE")
         return conn
