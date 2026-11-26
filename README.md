@@ -5,58 +5,84 @@ Designed with enterprise-level financial integrity in mind, it handles everythin
 
 ## Key Features
 
-# Core Banking & Accounting
+## Core Banking & Accounting
 
 Double-Entry Bookkeeping: Every transaction posts balanced journal_lines alongside the wallet ledger_entries (sub-ledger).
+
 Immutable Ledger: SQLite BEFORE UPDATE/DELETE triggers strictly forbid the modification or deletion of posted financial records, audit logs, and state events.
+
 Minor Units Precision: All monetary values are stored and calculated in integer minor units (piastres) using Python's Decimal to completely eliminate floating-point rounding errors.
+
 Automated Reconciliation: Built-in engine to verify that the wallet sub-ledger perfectly matches the general journal control accounts and that all journal entries are strictly balanced.
+
 Trial Balance: Admin tool to generate a real-time trial balance across all accounting codes.
 
-# Transactions & Transfers
+## Transactions & Transfers
 
 Deposits & Withdrawals: Atomic posting of funds with strict policy validation.
+
 Peer-to-Peer (P2P) Transfers: Secure wallet-to-wallet transfers with automatic fee calculation.
+
 Configurable Fee Engine: Supports both basis points (BPS) and fixed minor-unit fees for transfers.
+
 Transaction Reversals: Admin-only reversal engine that creates offsetting ledger/journal entries, enforces recipient fund availability, and updates workflow states.
 
-# Security & Risk Management
+## Security & Risk Management
 
 Policy Engine: Enforces configurable business rules, including maximum single-transaction limits, daily transfer limits, and daily withdrawal limits.
+
 Idempotency & Replay Protection: Every financial operation requires an idempotency key and request fingerprint, preventing duplicate charges or conflicting retries.
+
 Role-Based Access Control (RBAC): Strict separation of customer and admin roles, enforced via Principal context and authorization guards.
+
 Secure Authentication: Passwords are hashed using PBKDF2-SHA256 with 310,000 iterations and salt.
+
 Input Validation: Strict normalization for Emails and Egyptian Phone Numbers (E.164 format).
 
-# State Machine & Workflows
+## State Machine & Workflows
 
 Transaction Intents: Supports asynchronous, multi-step transaction lifecycles (pending → processing → completed/failed) for external payment gateway integrations.
+
 Workflow Guards: Database-level triggers enforce valid state transitions, preventing illegal state jumps.
 
-# Reporting & Observability
+## Reporting & Observability
 
 Wallet Statements: Generate detailed customer statements with opening/closing balances, running balances, and categorized totals (deposits, withdrawals, incoming/outgoing transfers, fees).
+
 CSV Exports: Export customer statements and admin transaction reports to CSV.
+
 Structured Logging: JSON-formatted logging with correlation_id tracking across the entire lifecycle of a request.
+
 Comprehensive Audit Trail: Every state change, admin action, and profile update is immutably logged with actor IDs, old/new values, and reasons.
 
 ## Architecture & Design Patterns
 
 The project is structured using clean, layered architecture principles:
+
 Database Layer (database.py): Manages SQLite connections, schema initialization, and enforces the Unit of Work pattern by passing the conn object through the stack to ensure atomic transactions.
-Repository Layer (_\_repository.py): Handles raw SQL queries and data mapping, completely isolated from business logic.
-Service Layer (_\_service.py): Orchestrates business rules, calls repositories, and manages transaction boundaries.
+
+Repository Layer (\_\_repository.py): Handles raw SQL queries and data mapping, completely isolated from business logic.
+
+Service Layer (\_\_service.py): Orchestrates business rules, calls repositories, and manages transaction boundaries.
+
 Result Pattern (result.py): Services return a standardized Result object (Result.ok / Result.fail), ensuring consistent error handling and data propagation without relying on exceptions for control flow.
+
 Security Context (security_context.py): Uses a Principal dataclass to pass authenticated user context securely through the service layer.
 
 ## Database Schema Highlights
 
 The SQLite schema is heavily constrained to guarantee financial integrity:
+
 transactions: Immutable record of financial events.
+
 ledger_entries: Wallet sub-ledger (tracks actual wallet balances).
+
 journal_lines: General ledger (tracks double-entry accounting codes like wallet_liability, fee_revenue, cash).
+
 transaction_workflows & transaction_intents: State machines for async processing.
+
 transaction_policies: Dynamic configuration for limits and fees.
+
 audit_logs & reconciliation_runs: Immutable compliance and integrity tracking.
 
 ## Getting Started
@@ -65,7 +91,7 @@ Prerequisites
 Python 3.8+
 Required packages: email_validator, phonenumbers
 
-# Installation
+## Installation
 
 ```bash
 pip install email_validator phonenumbers
@@ -133,7 +159,9 @@ wallet_app/
 ## Design Notes
 
 Currency: The system is currently hardcoded for EGP (Egyptian Pound), where 1 EGP = 100 minor units (piastres).
+
 Concurrency: SQLite BEGIN IMMEDIATE is used to serialize writers and prevent race conditions during balance checks and ledger postings.
+
 Immutability: If you need to correct a posted transaction, you must use the ReversalService to post an offsetting transaction. Direct database edits are blocked by triggers.
 
 ## Idempotency note
